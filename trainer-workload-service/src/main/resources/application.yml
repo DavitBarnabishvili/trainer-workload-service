@@ -29,6 +29,10 @@ eureka:
   instance:
     prefer-ip-address: true
 
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION:86400000}
+
 logging:
   level:
     com.gym.crm.workload: DEBUG
