@@ -1,6 +1,7 @@
 package com.gym.crm.workload.repository.impl;
 
 import com.gym.crm.workload.entity.TrainerWorkload;
+import com.gym.crm.workload.entity.YearSummary;
 import com.gym.crm.workload.repository.TrainerWorkloadRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
@@ -73,16 +74,27 @@ public class TrainerWorkloadRepositoryImpl implements TrainerWorkloadRepository 
         logger.debug("Finding trainer workload by username: {}", trainerUsername);
 
         try {
+            // First query: fetch TrainerWorkload with years
             TypedQuery<TrainerWorkload> query = entityManager.createQuery(
-                    "SELECT tw FROM TrainerWorkload tw " +
-                            "LEFT JOIN FETCH tw.years y " +
-                            "LEFT JOIN FETCH y.months " +
+                    "SELECT DISTINCT tw FROM TrainerWorkload tw " +
+                            "LEFT JOIN FETCH tw.years " +
                             "WHERE tw.trainerUsername = :username",
                     TrainerWorkload.class
             );
             query.setParameter("username", trainerUsername);
-
             TrainerWorkload workload = query.getSingleResult();
+
+            // Second query: fetch months for all years
+            if (!workload.getYears().isEmpty()) {
+                entityManager.createQuery(
+                                "SELECT DISTINCT y FROM YearSummary y " +
+                                        "LEFT JOIN FETCH y.months " +
+                                        "WHERE y.trainerWorkload = :workload",
+                                YearSummary.class
+                        ).setParameter("workload", workload)
+                        .getResultList();
+            }
+
             logger.debug("Found trainer workload for username: {}", trainerUsername);
             return Optional.of(workload);
 
@@ -119,17 +131,27 @@ public class TrainerWorkloadRepositoryImpl implements TrainerWorkloadRepository 
     public List<TrainerWorkload> findAll() {
         logger.debug("Finding all trainer workloads");
 
+        // First query: fetch all workloads with years
         TypedQuery<TrainerWorkload> query = entityManager.createQuery(
                 "SELECT DISTINCT tw FROM TrainerWorkload tw " +
-                        "LEFT JOIN FETCH tw.years y " +
-                        "LEFT JOIN FETCH y.months " +
+                        "LEFT JOIN FETCH tw.years " +
                         "ORDER BY tw.trainerUsername",
                 TrainerWorkload.class
         );
-
         List<TrainerWorkload> workloads = query.getResultList();
-        logger.debug("Found {} trainer workloads", workloads.size());
 
+        // Second query: fetch all months for these workloads
+        if (!workloads.isEmpty()) {
+            entityManager.createQuery(
+                            "SELECT DISTINCT y FROM YearSummary y " +
+                                    "LEFT JOIN FETCH y.months " +
+                                    "WHERE y.trainerWorkload IN :workloads",
+                            YearSummary.class
+                    ).setParameter("workloads", workloads)
+                    .getResultList();
+        }
+
+        logger.debug("Found {} trainer workloads", workloads.size());
         return workloads;
     }
 
