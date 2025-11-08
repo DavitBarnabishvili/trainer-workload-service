@@ -3,6 +3,14 @@ package com.gym.crm.workload.controller;
 import com.gym.crm.workload.dto.TrainerWorkloadRequest;
 import com.gym.crm.workload.dto.TrainerWorkloadResponse;
 import com.gym.crm.workload.service.TrainerWorkloadService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +22,8 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/trainer/workload")
+@Tag(name = "Trainer Workload", description = "Endpoints for managing trainer workload and monthly summaries")
+@SecurityRequirement(name = "Bearer Authentication")
 public class TrainerWorkloadController {
 
     private static final Logger logger = LoggerFactory.getLogger(TrainerWorkloadController.class);
@@ -25,7 +35,33 @@ public class TrainerWorkloadController {
     }
 
     @PostMapping
-    public ResponseEntity<Void> updateTrainerWorkload(@Valid @RequestBody TrainerWorkloadRequest request) {
+    @Operation(
+            summary = "Update trainer workload",
+            description = "Add or remove training hours from a trainer's monthly summary"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Workload updated successfully"
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid request data",
+                    content = @Content(schema = @Schema(implementation = String.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - Invalid or missing JWT token"
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Internal server error"
+            )
+    })
+    public ResponseEntity<Void> updateTrainerWorkload(
+            @Parameter(description = "Trainer workload update request", required = true)
+            @Valid @RequestBody TrainerWorkloadRequest request) {
+
         String transactionId = UUID.randomUUID().toString();
         MDC.put("transactionId", transactionId);
 
@@ -46,7 +82,29 @@ public class TrainerWorkloadController {
     }
 
     @GetMapping("/{username}")
-    public ResponseEntity<TrainerWorkloadResponse> getTrainerWorkload(@PathVariable String username) {
+    @Operation(
+            summary = "Get trainer workload",
+            description = "Retrieve complete workload summary for a specific trainer including all years and months"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Workload retrieved successfully",
+                    content = @Content(schema = @Schema(implementation = TrainerWorkloadResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Trainer workload not found"
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - Invalid or missing JWT token"
+            )
+    })
+    public ResponseEntity<TrainerWorkloadResponse> getTrainerWorkload(
+            @Parameter(description = "Trainer username", required = true, example = "trainer.one")
+            @PathVariable String username) {
+
         String transactionId = UUID.randomUUID().toString();
         MDC.put("transactionId", transactionId);
 
