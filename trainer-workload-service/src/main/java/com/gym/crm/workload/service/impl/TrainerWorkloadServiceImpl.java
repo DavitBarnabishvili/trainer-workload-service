@@ -1,6 +1,5 @@
 package com.gym.crm.workload.service.impl;
 
-import com.gym.crm.workload.dto.ActionType;
 import com.gym.crm.workload.dto.TrainerWorkloadRequest;
 import com.gym.crm.workload.dto.TrainerWorkloadResponse;
 import com.gym.crm.workload.entity.TrainerWorkload;
@@ -28,14 +27,12 @@ public class TrainerWorkloadServiceImpl implements TrainerWorkloadService {
     }
 
     @Override
-    public void updateWorkload(TrainerWorkloadRequest request) {
-        logger.info("Updating workload for trainer: {} with action: {}",
-                request.getTrainerUsername(), request.getActionType());
+    public void addTraining(TrainerWorkloadRequest request) {
+        logger.info("Adding training for trainer: {}", request.getTrainerUsername());
 
         TrainerWorkload workload = repository.findByTrainerUsername(request.getTrainerUsername())
                 .orElseGet(() -> createNewWorkload(request));
 
-        // Update trainer info in case it changed
         workload.setTrainerFirstName(request.getTrainerFirstName());
         workload.setTrainerLastName(request.getTrainerLastName());
         workload.setIsActive(request.getIsActive());
@@ -45,18 +42,30 @@ public class TrainerWorkloadServiceImpl implements TrainerWorkloadService {
         int month = trainingDate.getMonthValue();
         int duration = request.getTrainingDuration();
 
-        if (request.getActionType() == ActionType.ADD) {
-            workload.addOrUpdateTraining(year, month, duration);
-            logger.info("Added {} minutes to {}/{} for trainer: {}",
-                    duration, month, year, request.getTrainerUsername());
-        } else if (request.getActionType() == ActionType.DELETE) {
-            workload.removeTraining(year, month, duration);
-            logger.info("Removed {} minutes from {}/{} for trainer: {}",
-                    duration, month, year, request.getTrainerUsername());
-        }
-
+        workload.addOrUpdateTraining(year, month, duration);
         repository.save(workload);
-        logger.info("Successfully updated workload for trainer: {}", request.getTrainerUsername());
+
+        logger.info("Successfully added {} minutes to {}/{} for trainer: {}",
+                duration, month, year, request.getTrainerUsername());
+    }
+
+    @Override
+    public void deleteTraining(TrainerWorkloadRequest request) {
+        logger.info("Deleting training for trainer: {}", request.getTrainerUsername());
+
+        TrainerWorkload workload = repository.findByTrainerUsername(request.getTrainerUsername())
+                .orElseThrow(() -> new WorkloadNotFoundException("Trainer workload not found for username: " + request.getTrainerUsername()));
+
+        LocalDate trainingDate = request.getTrainingDate();
+        int year = trainingDate.getYear();
+        int month = trainingDate.getMonthValue();
+        int duration = request.getTrainingDuration();
+
+        workload.removeTraining(year, month, duration);
+        repository.save(workload);
+
+        logger.info("Successfully removed {} minutes from {}/{} for trainer: {}",
+                duration, month, year, request.getTrainerUsername());
     }
 
     @Override
