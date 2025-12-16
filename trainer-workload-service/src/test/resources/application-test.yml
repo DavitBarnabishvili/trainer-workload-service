@@ -1,22 +1,12 @@
 spring:
-  datasource:
-    url: jdbc:h2:mem:test;MODE=PostgresSQL
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
-
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    show-sql: false
-
-  h2:
-    console:
-      enabled: false
+  data:
+    mongodb:
+      host: localhost
+      port: 27017
+      database: test_trainer_workload_db
 
   activemq:
     broker-url: vm://localhost?broker.persistent=false
-    in-memory: true
 
 activemq:
   queues:
@@ -29,3 +19,5 @@ eureka:
 logging:
   level:
     com.gym.crm.workload: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%X{transactionId:-NO-TX}] [%thread] %-5level %logger{36} - %msg%n"
