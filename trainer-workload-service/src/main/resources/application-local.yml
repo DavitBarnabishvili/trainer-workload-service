@@ -2,6 +2,25 @@ spring:
   activemq:
     broker-url: vm://localhost?broker.persistent=false
 
+  data:
+    mongodb:
+      database: trainer_workload_db
+      auto-index-creation: true
+
+  mongodb:
+    embedded:
+      version: 6.0.12
+
+de:
+  flapdoodle:
+    mongodb:
+      embedded:
+        version: 6.0.12
+
 activemq:
   queues:
     trainer-workload: trainer.workload.queue
+
+eureka:
+  client:
+    enabled: false
