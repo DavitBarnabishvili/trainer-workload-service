@@ -10,25 +10,26 @@ RUN mvn dependency:go-offline -B
 
 COPY src ./src
 
-# Build with local profile (includes embedded MongoDB dependencies)
-RUN mvn clean package -DskipTests -Plocal
+# Build the application
+RUN mvn clean package -DskipTests
 
 
-FROM eclipse-temurin:21-jre-jammy
+FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
-RUN groupadd -r spring && useradd -r -g spring -m -d /home/spring spring
+RUN addgroup -S spring && adduser -S spring -G spring
 
 COPY --from=builder /app/target/trainer-workload-service-1.0.0.jar app.jar
 
-RUN chown -R spring:spring /app /home/spring
+RUN chown -R spring:spring /app
 
 USER spring
 
 EXPOSE 8082
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8082/actuator/health || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8082/actuator/health || exit 1
 
-ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=local"]
+# Default to docker profile (can be overridden via environment variable)
+ENTRYPOINT ["java", "-jar", "app.jar"]
