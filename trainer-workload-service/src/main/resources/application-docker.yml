@@ -1,0 +1,38 @@
+# Docker Profile Configuration
+
+spring:
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/trainer_workload_db}
+      auto-index-creation: true
+
+  # External ActiveMQ broker
+  activemq:
+    broker-url: ${ACTIVEMQ_BROKER_URL:tcp://localhost:61616}
+    user: admin
+    password: admin
+
+activemq:
+  queues:
+    trainer-workload: trainer.workload.queue
+
+eureka:
+  client:
+    enabled: false
+
+logging:
+  level:
+    com.gym.crm.workload: INFO
+    org.springframework.jms: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%X{transactionId:-NO-TX}] [%thread] %-5level %logger{36} - %msg%n"
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
