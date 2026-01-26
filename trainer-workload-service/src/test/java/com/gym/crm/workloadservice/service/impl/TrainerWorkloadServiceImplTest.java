@@ -60,11 +60,11 @@ public class TrainerWorkloadServiceImplTest {
     }
 
     @Test
-    void testUpdateWorkload_AddTraining_ExistingTrainer() {
+    void testAddTraining_ExistingTrainer() {
         when(repository.findByTrainerUsername("john.doe")).thenReturn(Optional.of(workload));
         when(repository.save(any(TrainerWorkload.class))).thenReturn(workload);
 
-        service.updateWorkload(request);
+        service.addTraining(request);
 
         verify(repository).findByTrainerUsername("john.doe");
         verify(repository).save(any(TrainerWorkload.class));
@@ -74,7 +74,7 @@ public class TrainerWorkloadServiceImplTest {
     }
 
     @Test
-    void testUpdateWorkload_AddTraining_NewTrainer() {
+    void testAddTraining_NewTrainer() {
         when(repository.findByTrainerUsername("john.doe")).thenReturn(Optional.empty());
         when(repository.save(any(TrainerWorkload.class))).thenAnswer(invocation -> {
             TrainerWorkload saved = invocation.getArgument(0);
@@ -82,16 +82,29 @@ public class TrainerWorkloadServiceImplTest {
             return saved;
         });
 
-        service.updateWorkload(request);
+        service.addTraining(request);
 
         verify(repository).findByTrainerUsername("john.doe");
         verify(repository).save(any(TrainerWorkload.class));
     }
 
     @Test
-    void testUpdateWorkload_DeleteTraining() {
-        request.setActionType(ActionType.DELETE);
+    void testAddTraining_MultipleMonthsInYear() {
+        when(repository.findByTrainerUsername("john.doe")).thenReturn(Optional.of(workload));
+        when(repository.save(any(TrainerWorkload.class))).thenReturn(workload);
 
+        service.addTraining(request);
+
+        request.setTrainingDate(LocalDate.of(2025, 12, 10));
+        request.setTrainingDuration(90);
+        service.addTraining(request);
+
+        assertEquals(1, workload.getYears().size());
+        assertEquals(2, workload.getYears().getFirst().getMonths().size());
+    }
+
+    @Test
+    void testDeleteTraining_Success() {
         YearSummary year2025 = YearSummary.builder()
                 .year(2025)
                 .months(new ArrayList<>())
@@ -108,10 +121,52 @@ public class TrainerWorkloadServiceImplTest {
         when(repository.findByTrainerUsername("john.doe")).thenReturn(Optional.of(workload));
         when(repository.save(any(TrainerWorkload.class))).thenReturn(workload);
 
-        service.updateWorkload(request);
+        service.deleteTraining(request);
 
         verify(repository).save(any(TrainerWorkload.class));
         assertEquals(60, november.getTotalDuration());
+    }
+
+    @Test
+    void testDeleteTraining_TrainerNotFound() {
+        when(repository.findByTrainerUsername("unknown")).thenReturn(Optional.empty());
+
+        TrainerWorkloadRequest deleteRequest = TrainerWorkloadRequest.builder()
+                .trainerUsername("unknown")
+                .trainerFirstName("Unknown")
+                .trainerLastName("Trainer")
+                .isActive(true)
+                .trainingDate(LocalDate.of(2025, 11, 15))
+                .trainingDuration(60)
+                .actionType(ActionType.DELETE)
+                .build();
+
+        assertThrows(WorkloadNotFoundException.class, () -> service.deleteTraining(deleteRequest));
+    }
+
+    @Test
+    void testDeleteTraining_ReducesToZero() {
+        request.setTrainingDuration(200);
+
+        YearSummary year = YearSummary.builder()
+                .year(2025)
+                .months(new ArrayList<>())
+                .build();
+
+        MonthSummary month = MonthSummary.builder()
+                .month(11)
+                .totalDuration(100)
+                .build();
+
+        year.getMonths().add(month);
+        workload.getYears().add(year);
+
+        when(repository.findByTrainerUsername("john.doe")).thenReturn(Optional.of(workload));
+        when(repository.save(any(TrainerWorkload.class))).thenReturn(workload);
+
+        service.deleteTraining(request);
+
+        assertEquals(0, month.getTotalDuration());
     }
 
     @Test
@@ -145,46 +200,5 @@ public class TrainerWorkloadServiceImplTest {
         when(repository.findByTrainerUsername("unknown")).thenReturn(Optional.empty());
 
         assertThrows(WorkloadNotFoundException.class, () -> service.getTrainerWorkload("unknown"));
-    }
-
-    @Test
-    void testUpdateWorkload_MultipleMonthsInYear() {
-        when(repository.findByTrainerUsername("john.doe")).thenReturn(Optional.of(workload));
-        when(repository.save(any(TrainerWorkload.class))).thenReturn(workload);
-
-        service.updateWorkload(request);
-
-        request.setTrainingDate(LocalDate.of(2025, 12, 10));
-        request.setTrainingDuration(90);
-        service.updateWorkload(request);
-
-        assertEquals(1, workload.getYears().size());
-        assertEquals(2, workload.getYears().getFirst().getMonths().size());
-    }
-
-    @Test
-    void testUpdateWorkload_DeleteReducesToZero() {
-        request.setActionType(ActionType.DELETE);
-        request.setTrainingDuration(200);
-
-        YearSummary year = YearSummary.builder()
-                .year(2025)
-                .months(new ArrayList<>())
-                .build();
-
-        MonthSummary month = MonthSummary.builder()
-                .month(11)
-                .totalDuration(100)
-                .build();
-
-        year.getMonths().add(month);
-        workload.getYears().add(year);
-
-        when(repository.findByTrainerUsername("john.doe")).thenReturn(Optional.of(workload));
-        when(repository.save(any(TrainerWorkload.class))).thenReturn(workload);
-
-        service.updateWorkload(request);
-
-        assertEquals(0, month.getTotalDuration());
     }
 }
