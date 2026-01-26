@@ -1,18 +1,22 @@
 package com.gym.crm.workload.entity;
 
-import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
-@Table(name = "trainer_workload")
+@Document(collection = "trainer_workload")
+@CompoundIndex(name = "trainer_name_idx", def = "{'trainerFirstName': 1, 'trainerLastName': 1}")
 @Data
 @Builder
 @NoArgsConstructor
@@ -20,23 +24,26 @@ import java.util.List;
 public class TrainerWorkload {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @Column(unique = true, nullable = false)
+    @NotBlank
+    @Size(min = 3, max = 50)
+    @Indexed(unique = true)
     private String trainerUsername;
 
-    @Column(nullable = false)
+    @NotBlank
+    @Size(min = 1, max = 50)
+    @Indexed
     private String trainerFirstName;
 
-    @Column(nullable = false)
+    @NotBlank
+    @Size(min = 1, max = 50)
+    @Indexed
     private String trainerLastName;
 
-    @Column(nullable = false)
+    @NotNull
     private Boolean isActive;
 
-    @OneToMany(mappedBy = "trainerWorkload", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
     @Builder.Default
     private List<YearSummary> years = new ArrayList<>();
 
@@ -47,7 +54,6 @@ public class TrainerWorkload {
                 .orElseGet(() -> {
                     YearSummary newYear = YearSummary.builder()
                             .year(year)
-                            .trainerWorkload(this)
                             .months(new ArrayList<>())
                             .build();
                     years.add(newYear);

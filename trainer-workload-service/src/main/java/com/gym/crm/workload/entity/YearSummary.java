@@ -1,39 +1,27 @@
 package com.gym.crm.workload.entity;
 
-import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
-@Table(name = "year_summary")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class YearSummary {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(name = "year_num", nullable = false)
+    @NotNull
+    @Min(1970)
+    @Max(2100)
     private Integer year;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "trainer_workload_id", nullable = false)
-    @ToString.Exclude
-    private TrainerWorkload trainerWorkload;
-
-    @OneToMany(mappedBy = "yearSummary", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
     @Builder.Default
     private List<MonthSummary> months = new ArrayList<>();
 
@@ -45,7 +33,6 @@ public class YearSummary {
                     MonthSummary newMonth = MonthSummary.builder()
                             .month(month)
                             .totalDuration(0)
-                            .yearSummary(this)
                             .build();
                     months.add(newMonth);
                     return newMonth;

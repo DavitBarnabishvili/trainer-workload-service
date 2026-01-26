@@ -1,6 +1,5 @@
 package com.gym.crm.workloadservice.entity;
 
-import com.gym.crm.workload.entity.MonthSummary;
 import com.gym.crm.workload.entity.YearSummary;
 import org.junit.jupiter.api.Test;
 
@@ -62,18 +61,5 @@ public class YearSummaryTest {
         year.removeFromMonth(5, 100);
 
         assertEquals(0, year.getMonths().getFirst().getTotalDuration());
-    }
-
-    @Test
-    void testBidirectionalLinkIsSet() {
-        YearSummary year = YearSummary.builder()
-                .year(2025)
-                .months(new ArrayList<>())
-                .build();
-
-        year.addOrUpdateMonth(5, 50);
-
-        MonthSummary month = year.getMonths().getFirst();
-        assertSame(year, month.getYearSummary(), "Month must reference its parent YearSummary");
     }
 }
